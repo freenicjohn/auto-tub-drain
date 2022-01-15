@@ -11,14 +11,14 @@ int state = OFF;
 int minuteInterval = 1;
 unsigned long currentTime = 0;
 unsigned long waitTime = 0;
-unsigned long remainingTime = 0;
+unsigned long selection = 0;
 
 void setup() {
   pinMode(buzzerPin, OUTPUT);
   pinMode(motorPin, OUTPUT);
   pinMode(buttonPin, INPUT);
   currentTime = millis();
-  Serial.begin(9600);
+  //Serial.begin(9600);
 }
 
 void loop() {  
@@ -34,30 +34,41 @@ void loop() {
       break;
     case TIMING :
       if (digitalRead(buttonPin) == HIGH){
-        remainingTime = minuteInterval * (unsigned long)1000 * (unsigned long)60;
         soundOn();
+        selection = 1;
+        beep(900, 200);
         waitTime = millis();
         while ((millis() - waitTime) < 3000){
           if (digitalRead(buttonPin) == LOW){
-            beep(900, 200);
-            remainingTime = (minuteInterval * (unsigned long)1000 * (unsigned long)60) + remainingTime;
-            waitTime = millis();
+            if (selection < 3) {
+              selection++;
+              for (unsigned long i = 0; i < selection; i++) {  // beep to indicate selection
+                beep(900, 200);
+                delay(100);
+              }
+              waitTime = millis();
+            }
           }
-          Serial.println(remainingTime);
+          Serial.println(selection);
         }
         state = TIMEON;
       }
       break;
     case TIMEON :
       soundTimeOn();
-      waitTime = millis();
-      while ((millis() - waitTime) < remainingTime){
+
+      // Option 1: delay() - should use less battery - TODO: look into sleep modes
+      delay(selection * (unsigned long)15 * (unsigned long)1000 * (unsigned long)60);
+
+      // Old method: get millis() - checks for button press to cancel - too power hungry
+      /*waitTime = millis();
+       *while ((millis() - waitTime) < (selection * (unsigned long)15 * (unsigned long)1000 * (unsigned long)60)){
         if (digitalRead(buttonPin) == LOW){
           beep(300, 200);
           goto exit_loop;
         }
         Serial.println(millis() - waitTime);
-      }
+      }*/
       pullCord();  
       exit_loop:
       state = OFF;
@@ -77,7 +88,6 @@ void soundOn(){
   beep(700, 200);
   beep(900, 200);
   delay(500);
-  beep(900, 200);
 }
 
 void beep(int level, int duration){
@@ -96,6 +106,6 @@ void soundWarning(){
 void pullCord() {
   soundWarning();
   digitalWrite(motorPin, HIGH);
-  delay(300);
+  delay(600);
   digitalWrite(motorPin, LOW);
 }
