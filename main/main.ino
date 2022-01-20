@@ -4,6 +4,8 @@ const int motorPin =  2;
 const int OFF = 10;
 const int TIMING = 20;
 const int TIMEON = 30;
+const int ANNOY = 40;
+const int MOTORCTL = 50;
 
 int lastButtonState = 0;
 int buttonState = 0;
@@ -28,6 +30,7 @@ void loop() {
       if (lastButtonState == HIGH){
         if (buttonState == LOW ){
           state = TIMING;
+          waitTime = millis();
         }
       };
       lastButtonState = buttonState;
@@ -53,6 +56,11 @@ void loop() {
         }
         state = TIMEON;
       }
+      else {
+        if ((millis() - waitTime) > 1500){
+          state = MOTORCTL;
+        }
+      }
       break;
     case TIMEON :
       soundTimeOn();
@@ -71,7 +79,15 @@ void loop() {
       }*/
       pullCord();  
       exit_loop:
-      state = OFF;
+      state = ANNOY;
+    case ANNOY:
+      while(true){
+        beep(400, 200);
+        delay(1000);
+      };
+    case MOTORCTL:
+      if (digitalRead(buttonPin) == LOW){digitalWrite(motorPin, HIGH);}
+      else {digitalWrite(motorPin, LOW);};
     default :
       ;
   }
